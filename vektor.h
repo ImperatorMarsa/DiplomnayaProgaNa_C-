@@ -82,6 +82,10 @@ class vektor{ // http://studlab.com/news/skaljarnoe_i_vektornoe_proizvedenie_vek
 		double mag=sqrt(coords[0]*coords[0]+coords[1]*coords[1]+coords[2]*coords[2]);
 		return mag;
 	};
+	double fRand(double fMin, double fMax){
+		double f=(double)rand()/RAND_MAX;
+		return fMin+f*(fMax-fMin);
+	}	
 	vektor(double x,double y,double z){ //Конструктор с тремя аргументами:
 		coords[0]=x;
 		coords[1]=y;
@@ -92,8 +96,17 @@ class vektor{ // http://studlab.com/news/skaljarnoe_i_vektornoe_proizvedenie_vek
 	};
 	//Конструктор без аргументов:
 	vektor(){
-		for(int i=0; i < 3; i++){
+		for(int i=0; i<3; i++){
 			coords[i]=0;
-		};
+		}
+	};
+	vektor(int S){
+		coords[0]=fRand(-S,S);
+		coords[1]=fRand(-S,S);
+		coords[2]=fRand(-S,S);
+		double magP=sqrt(pow(coords[0], 2)+pow(coords[1], 2)+pow(coords[2], 2));
+		for(int i=0; i<3; i++){
+			coords[i]=coords[i]/magP;
+		}
 	};
 };

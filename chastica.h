@@ -13,13 +13,13 @@ double PI=3.14159265358979323846264338327950288419716939937510582097494459230781
 double Vyazkost=2.15e-3; // Paskal*sekunda
 double KT=273.16*1.38e-23; // 1.38e-23
 double U0=4e-7*PI; // Genri/metr
-double TimE=1.0e-9; // sekund
-
-double GraniciVselennoy=7.3e-8;
+double TimE=1.0e-10; // sekund
 //#################################################################################################################################################################################################################################################################################
 
 class chastica{public:
 //###__Inicializaciya__############################################################################################################################################################################################################################################################		
+	double GraniciVselennoy=7.3e-8;
+
 	double Radius=6.66e-9; // metrov
 	double Radius3=Radius*Radius*Radius;
 
@@ -96,22 +96,29 @@ class chastica{public:
 	void PorvrkaGrani(){
 		if (pos[0]>GraniciVselennoy){pos=vektor(pos[0]-2*GraniciVselennoy, pos[1], pos[2]);}
 		else if (pos[0]<-GraniciVselennoy ){pos=vektor(pos[0]+2*GraniciVselennoy, pos[1], pos[2]);}
+		
 		if (pos[1]>GraniciVselennoy) {pos=vektor(pos[0], pos[1]-2*GraniciVselennoy, pos[2]);}
 		else if (pos[1]<-GraniciVselennoy) {pos=vektor(pos[0], pos[1]+2*GraniciVselennoy, pos[2]);}
+		
 		if (pos[2]>GraniciVselennoy) {pos=vektor(pos[0], pos[1], pos[2]-2*GraniciVselennoy);}
 		else if (pos[2]<-GraniciVselennoy) {pos=vektor(pos[0], pos[1], pos[2]+2*GraniciVselennoy);}
 	}
 	vektor StahostSmeshLin(){
-		vektor pom;
+		vektor pom(1);
+		// pom.show();
 		double difuz=KT/(6.0*PI*Radius*Vyazkost);
-		pom=pom*((2*difuz*TimE, .5)*Gauss(0, 1));
+		// cout<<difuz<<" ";
+		difuz=(pow(2*difuz*TimE, .5)*Gauss(0, 1));
+		pom=pom*difuz;
+		// pom.show();
+		// cout<<" "<<difuz<<endl;
 
 		return pom;
 	}
 	vektor StahostSmeshVrash(){
 		vektor pom;
 		double difuz=KT/(8.0*PI*pow(Radius, 3)*Vyazkost);
-		pom=pom*((2*difuz*TimE, .5)*Gauss(0, 1));
+		pom=pom*(pow(2*difuz*TimE, .5)*Gauss(0, 1));
 
 		return pom;
 	}

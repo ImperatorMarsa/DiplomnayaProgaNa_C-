@@ -78,7 +78,8 @@ int main(int argc, char** argv) {
 	graniciVselennoy=Chastici[0].Radius/pow(0.1*3/(4*pi*chisloChastic), 1.0/3.0);
 
 	ofstream fout("output.txt");
-	fout<<graniciVselennoy<<" "<<chisloChastic<<"\n";
+	double chisloIteraciy=1E5;
+	fout<<graniciVselennoy<<" "<<chisloIteraciy<<"\n";
 	fout.close();
 //###__Raspologayu_chastici_v_prostranstve__######################################################################################################################################################################################################################################
 	double chisloChasticNaOs=pow(chisloChastic, 1.0/3.0)/2;
@@ -88,6 +89,7 @@ int main(int argc, char** argv) {
 	for(double i=-chisloChasticNaOs; i<chisloChasticNaOs; i++){
 		for(double j=-chisloChasticNaOs; j<chisloChasticNaOs; j++){
 			for(double k=-chisloChasticNaOs; k<chisloChasticNaOs; k++){
+				Chastici[schetchik].GraniciVselennoy=graniciVselennoy;
 				Chastici[schetchik].pos=vektor(shtuk*i+shtuk*0.5, shtuk*j+shtuk*0.5, shtuk*k+shtuk*0.5);
 				schetchik++;
 			}
@@ -96,9 +98,12 @@ int main(int argc, char** argv) {
 //#################################################################################################################################################################################################################################################################################	
 
 //###__Osnovnoy_algoritm_modelirovaniya__##########################################################################################################################################################################################################################################
-	for(int AAA=0; AAA<1E7; AAA++){
+	for(int AAA=0; AAA<chisloIteraciy; AAA++){
+		int kakChastoPropuskat=10;
+
 		time_t seconds=time(NULL);
 		ofstream fout("output.txt", ios_base::app);
+		if(AAA%100==0){cout<<AAA<<" vot shas mi zdes\n";}
 		for(int I=0; I<chisloChastic; I++){
 			vektor forse(0,0,0);
 			vektor moment(0,0,0);
