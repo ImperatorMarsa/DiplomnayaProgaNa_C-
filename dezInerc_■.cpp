@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <cmath>
 #include <iostream>
 #include <ctime>
@@ -78,7 +79,7 @@ int main(int argc, char** argv) {
 	graniciVselennoy=Chastici[0].Radius/pow(0.1*3/(4*pi*chisloChastic), 1.0/3.0);
 
 	ofstream fout("output.txt");
-	double chisloIteraciy=1E5;
+	double chisloIteraciy=2E5;
 	fout<<graniciVselennoy<<" "<<chisloIteraciy<<"\n";
 	fout.close();
 //###__Raspologayu_chastici_v_prostranstve__######################################################################################################################################################################################################################################
@@ -86,15 +87,17 @@ int main(int argc, char** argv) {
 	double shtuk=graniciVselennoy/chisloChasticNaOs;
 	int schetchik=0;
 	cout<<shtuk<<" "<<chisloChasticNaOs<<endl;
-	for(double i=-chisloChasticNaOs; i<chisloChasticNaOs; i++){
-		for(double j=-chisloChasticNaOs; j<chisloChasticNaOs; j++){
-			for(double k=-chisloChasticNaOs; k<chisloChasticNaOs; k++){
-				Chastici[schetchik].GraniciVselennoy=graniciVselennoy;
-				Chastici[schetchik].pos=vektor(shtuk*i+shtuk*0.5, shtuk*j+shtuk*0.5, shtuk*k+shtuk*0.5);
-				schetchik++;
+	
+	#pragma omp parallel for 
+		for(double i=-chisloChasticNaOs; i<chisloChasticNaOs; i++){
+			for(double j=-chisloChasticNaOs; j<chisloChasticNaOs; j++){
+				for(double k=-chisloChasticNaOs; k<chisloChasticNaOs; k++){
+					Chastici[schetchik].GraniciVselennoy=graniciVselennoy;
+					Chastici[schetchik].pos=vektor(shtuk*i+shtuk*0.5, shtuk*j+shtuk*0.5, shtuk*k+shtuk*0.5);
+					schetchik++;
+				}
 			}
 		}
-	}
 //#################################################################################################################################################################################################################################################################################	
 
 //###__Osnovnoy_algoritm_modelirovaniya__##########################################################################################################################################################################################################################################
@@ -104,27 +107,29 @@ int main(int argc, char** argv) {
 		time_t seconds=time(NULL);
 		ofstream fout("output.txt", ios_base::app);
 		if(AAA%100==0){cout<<AAA<<" vot shas mi zdes\n";}
-		for(int I=0; I<chisloChastic; I++){
-			vektor forse(0,0,0);
-			vektor moment(0,0,0);
 
-			chastica odna=Chastici[I];
-			moment=moment+VneshPole(odna);
-			for(int J=0; J<chisloChastic; J++){
-				if(I==J) {continue;}
-				for(int A=0; A<8; A++){
-					chastica drugaya=Chastici[J];
-					drugaya.pos=NewCoord(drugaya.pos, A);
-					forse=forse+SteerOttalk(odna, drugaya)+MehSilaDipolya(odna, drugaya);
-					moment=moment+MehMomDipolya(odna, drugaya);
+		#pragma omp parallel for 
+			for(int I=0; I<chisloChastic; I++){
+				vektor forse(0,0,0);
+				vektor moment(0,0,0);
+
+				chastica odna=Chastici[I];
+				moment=moment+VneshPole(odna);
+				for(int J=0; J<chisloChastic; J++){
+					if(I==J) {continue;}
+					for(int A=0; A<8; A++){
+						chastica drugaya=Chastici[J];
+						drugaya.pos=NewCoord(drugaya.pos, A);
+						forse=forse+SteerOttalk(odna, drugaya)+MehSilaDipolya(odna, drugaya);
+						moment=moment+MehMomDipolya(odna, drugaya);
+					}
 				}
+				odna.forse=forse;
+				odna.moment=moment;
+				fout<<odna.pos[0]<<" "<<odna.pos[1]<<" "<<odna.pos[2]<<" | "<<odna.axis[0]<<" "<<odna.axis[1]<<" "<<odna.axis[2]<<" $ ";
+				odna.Kinematika();
+				Chastici[I]=odna;
 			}
-			odna.forse=forse;
-			odna.moment=moment;
-			fout<<odna.pos[0]<<" "<<odna.pos[1]<<" "<<odna.pos[2]<<" | "<<odna.axis[0]<<" "<<odna.axis[1]<<" "<<odna.axis[2]<<" $ ";
-			odna.Kinematika();
-			Chastici[I]=odna;
-		}
 		fout<<"\n";
 		fout.close();
 		// cout<<time(NULL)-seconds<<endl;
