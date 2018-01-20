@@ -1,3 +1,4 @@
+#include <string>
 #include <omp.h>
 #include <cmath>
 #include <iostream>
@@ -12,8 +13,10 @@ double pi=3.14159265358979323846264338327950288419716939937510582097494459230781
 double Time=1.0e-10; // sekund
 double kT=273.16*1.38e-23; // 1.38e-23
 double u0=4.0e-7*pi; // Genri/metr
+double MagnitnayaPronichObolochki=1;
 
-double graniciVselennoy=7.3e-8;
+double graniciVselennoy=42.0e-8;
+double alfa=2.5/graniciVselennoy;
 
 double MassivDlyaPereschetaPeriudGranic[]={0.0,0.0,0.0, 0.0,0.0,1.0, 0.0,1.0,0.0, 0.0,1.0,1.0, 1.0,0.0,0.0, 1.0,0.0,1.0, 1.0,1.0,0.0, 1.0,1.0,1.0};
 //#################################################################################################################################################################################################################################################################################
@@ -27,10 +30,10 @@ vektor VneshPole(chastica _1){
 
 	return M;
 }
-vektor SteerOttalk(chastica _1, chastica _2){ // https://www.desmos.com/calculator/ddxmffkqrj
+vektor SteerOttalk(chastica _1, chastica _2, vektor n){ // https://www.desmos.com/calculator/ddxmffkqrj
 	vektor F(0,0,0);
-	vektor pom=_1.pos-_2.pos;
-	double dist=pom.mag();
+	vektor r=_1.pos-_2.pos+n;
+	double dist=r.mag();
 	// Kakieto koefficienti #
 	double A=31.3; // #######
 	double B=73.0; // #######
@@ -38,131 +41,141 @@ vektor SteerOttalk(chastica _1, chastica _2){ // https://www.desmos.com/calculat
 	double M=_1.axis.mag(); // Magnitniy moment chastici
 	double q=2e-9; // Dlina volosni v metrah
 	double a=2.0*(_1.Radius+q); // Diametr chastici s volosney
-	if (dist<_1.Radius*2.0){
-		double buf=A*3*u0*(M*M)/(4*pi*(a*a*a*a))*exp(-B*(dist/a-1));
-		F=pom*buf;
-	}
+	if(dist<_1.Radius*2.0) {F=r*(A*3*u0*(M*M)/(4*pi*(a*a*a*a))*exp(-B*(dist/a-1)));}
 
 	return F;
 }
-vektor MehSilaDipolya(chastica _1, chastica _2){ // https://en.wikipedia.org/wiki/Magnetic_dipole
+vektor MehSilaDipolya(chastica _1, chastica _2, vektor n){ // https://en.wikipedia.org/wiki/Magnetic_dipole
 	vektor F(0,0,0);
-	vektor r=_1.pos-_2.pos;
-	if (abs(r[0])-graniciVselennoy<0 && abs(r[1])-graniciVselennoy<0 && abs(r[2])-graniciVselennoy<0){
-		F=(_2.axis*(_1.axis*r)+_1.axis*(_2.axis*r)+r*(_1.axis*_2.axis)-r*(5*(_1.axis*r)*(_2.axis*r)/pow(r.mag(), 2)))*(3*u0/(4*pi*pow(r.mag(), 5)));
-	}
+	vektor r=_1.pos-_2.pos+n;
+	// if (abs(r[0])-graniciVselennoy<0 && abs(r[1])-graniciVselennoy<0 && abs(r[2])-graniciVselennoy<0){
+	F=(_2.axis*(_1.axis*r)+_1.axis*(_2.axis*r)+r*(_1.axis*_2.axis)-r*(5*(_1.axis*r)*(_2.axis*r)/pow(r.mag(), 2)))*(3*u0/(4*pi*pow(r.mag(), 5)));
+	// }
 
 	return F;
 }
-vektor MehMomDipolya(chastica _1, chastica _2){ // https://en.wikipedia.org/wiki/Magnetic_dipole
+vektor MehMomDipolya(chastica _1, chastica _2, vektor n){ // https://en.wikipedia.org/wiki/Magnetic_dipole
 	vektor M(0,0,0);
-	vektor r=_1.pos-_2.pos;
-	if (abs(r[0])-graniciVselennoy<0 && abs(r[1])-graniciVselennoy<0 && abs(r[2])-graniciVselennoy<0){
-		vektor B=(r*((_2.axis*r)*3/pow(r.mag(), 5))-_2.axis*(1/pow(r.mag(), 3)))*(u0/(4*pi));
-		M(_1.axis, B);
-	} 
+	vektor r=_1.pos-_2.pos+n;
+	// if (abs(r[0])-graniciVselennoy<0 && abs(r[1])-graniciVselennoy<0 && abs(r[2])-graniciVselennoy<0){
+	vektor B=(r*((_2.axis*r)*3/pow(r.mag(), 5))-_2.axis*(1/pow(r.mag(), 3)))*(u0/(4*pi));
+	M(_1.axis, B);
+	// } 
 
 	return M;
 }
 //#################################################################################################################################################################################################################################################################################
 
 //###__Storonnie_Funkcii__#########################################################################################################################################################################################################################################################
-vektor NewCoord(vektor _1, int i){
+vektor NewCoord(vektor _1, int i) {
 	vektor a(copysign(1, -_1[0])*(2*graniciVselennoy*MassivDlyaPereschetaPeriudGranic[i*3+0]-abs(_1[0])), copysign(1, -_1[1])*(2*graniciVselennoy*MassivDlyaPereschetaPeriudGranic[i*3+1]-abs(_1[1])), copysign(1, -_1[2])*(2*graniciVselennoy*MassivDlyaPereschetaPeriudGranic[i*3+2]-abs(_1[2])));
 	return a;
 }
-double fRand(double fMin, double fMax){
+double fRand(double fMin, double fMax) {
 	double f=(double)rand()/RAND_MAX;
 	return fMin+f*(fMax-fMin);
 }
+double sqr(double a) {return pow(a, 2);}
 //#################################################################################################################################################################################################################################################################################
 
 int main(int argc, char** argv) {
-	chastica Chastici[2];
+	chastica Chastici[42];
 	int chisloChastic=sizeof(Chastici)/sizeof(Chastici[0]);
-	// graniciVselennoy=Chastici[0].Radius/pow(0.1*3/(4*pi*chisloChastic), 1.0/3.0);
+	graniciVselennoy=Chastici[0].Radius/pow(0.1*3/(4*pi*chisloChastic), 1.0/3.0);
+	alfa=2.5/graniciVselennoy;
 
-	ofstream titulOut("output.txt");
+	system("rmdir /s /q D:\\pomoina");
+	system("mkdir D:\\pomoina");
+	ofstream titulOut("D:\\pomoina\\Boobles.txt");
 	double chisloIteraciy=2E5;
 	titulOut<<graniciVselennoy<<" "<<chisloIteraciy<<"\n";
 	titulOut.close();
 //###__Raspologayu_chastici_v_prostranstve__######################################################################################################################################################################################################################################
-	// #pragma omp parallel for
-	double kord=graniciVselennoy/5;
-	Chastici[0].GraniciVselennoy=graniciVselennoy;
-	Chastici[0].TimE=Time;
-	Chastici[0].pos=vektor(kord, 0, 0);
-	Chastici[1].GraniciVselennoy=graniciVselennoy;
-	Chastici[1].TimE=Time;
-	Chastici[1].pos=vektor(-kord, 0, 0);
+	// #pragma omp parallel for 
 
-	// for(int i=0; i<chisloChastic; i++) {
-	// 	Chastici[i].GraniciVselennoy=graniciVselennoy;
-	// 	Chastici[i].TimE=Time;
-	// 	Chastici[i].pos=vektor(fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9));
-	// 	int j=i;
-	// 	while (j>0) {
-	// 		j=i;
-	// 		for(int k=0; k<i; k++) {
-	// 			double r=vektor(Chastici[i].pos-Chastici[k].pos).mag();
-	// 			if(r<=Chastici[i].Radius*3) {
-	// 				Chastici[i].pos=vektor(fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9));
-	// 			} else {j--;}
-	// 		}
-	// 	}
-	// }
+	// double kord=graniciVselennoy/4;
+	// Chastici[0].GraniciVselennoy=graniciVselennoy;
+	// Chastici[0].TimE=Time;
+	// Chastici[0].pos=vektor(kord, 0, 0);
+
+	// Chastici[1].GraniciVselennoy=graniciVselennoy;
+	// Chastici[1].TimE=Time;
+	// Chastici[1].pos=vektor(-kord, 0, 0);
+
+	for(int i=0; i<chisloChastic; i++) {
+		Chastici[i].GraniciVselennoy=graniciVselennoy;
+		Chastici[i].TimE=Time;
+		Chastici[i].pos=vektor(fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9));
+		int j=i;
+		while (j>0) {
+			j=i;
+			for(int k=0; k<i; k++) {
+				double r=vektor(Chastici[i].pos-Chastici[k].pos).mag();
+				if(r<=Chastici[i].Radius*3) {
+					Chastici[i].pos=vektor(fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9), fRand(-(graniciVselennoy-1E-9), graniciVselennoy-1E-9));
+				} else {j--;}
+			}
+		}
+	}
 //#################################################################################################################################################################################################################################################################################	
-	ofstream fout("output.txt", ios_base::app);
+	// ofstream fout("output.txt", ios_base::app);
 //###__Osnovnoy_algoritm_modelirovaniya__##########################################################################################################################################################################################################################################
-	for(int AAA=0; AAA<chisloIteraciy; AAA++){
-		int kakChastoPropuskat=2;
+	for(int AAA=0; AAA<chisloIteraciy; AAA++) {
+		int kakChastoPropuskat=1;
 		time_t seconds=time(NULL);
 
-		if(AAA%73==0){cout<<AAA<<" vot shas mi zdes\n";}
+		if(AAA%100==0) {cout<<AAA<<" vot shas mi zdes\n";}
 
 		#pragma omp parallel for 
-			for(int I=0; I<chisloChastic; I++){
+			for(int I=0; I<chisloChastic; I++) {
+				string adress="D:\\pomoina\\output"+to_string(I)+".txt";
+				ofstream fout(adress, ios_base::app);
+
 				vektor forse(0,0,0);
 				vektor moment(0,0,0);
 
 				chastica odna=Chastici[I];
 				moment=moment+VneshPole(odna);
-				for(int J=0; J<chisloChastic; J++){
-					if(I==J) {continue;}
-					for(int A=0; A<8; A++){
-						chastica drugaya=Chastici[J];
-						drugaya.pos=NewCoord(drugaya.pos, A);
-						forse=forse+SteerOttalk(odna, drugaya)+MehSilaDipolya(odna, drugaya);
-						moment=moment+MehMomDipolya(odna, drugaya);
+				for(int J=0; J<chisloChastic; J++) {
+					//+++++ Realizuyu Zdes Summi Evalda ++++++++++++++++++++++++++++++++++++
+					chastica drugaya=Chastici[J];
+					int PredelSumm=3;
+
+					for(int X=-PredelSumm; X<PredelSumm+1; X++) {
+						int pom1=(int)sqrt(sqr(PredelSumm)-sqr(X));
+						for(int Y=-pom1; Y<pom1+1; Y++) {
+							int pom2=(int)sqrt(sqr(PredelSumm)-sqr(X)-sqr(Y));
+							for(int Z=-pom2; Z<pom2+1; Z++) {
+								vektor n(X*graniciVselennoy*2, Y*graniciVselennoy*2, Z*graniciVselennoy*2);
+								double magN=n.mag();
+
+								if(magN!=0 || J!=I) {
+									forse=forse+MehSilaDipolya(odna, drugaya, n)+SteerOttalk(odna, drugaya, n);
+									moment=moment+MehMomDipolya(odna, drugaya, n);
+								}
+							}
+						}
 					}
+					//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 				}
 				odna.forse=forse;
 				odna.moment=moment;
 
-				if (AAA%kakChastoPropuskat==0){fout<<odna.pos[0]<<" "<<odna.pos[1]<<" "<<odna.pos[2]<<" | "<<odna.axis[0]<<" "<<odna.axis[1]<<" "<<odna.axis[2]<<" $ ";}
-				
+				// if(AAA%500==0) {
+				// 	cout<<"\n"<<forse.mag()<<" "<<moment.mag()<<"\t"<<AAA<<"\n\n";
+				// }
+
+				// if(AAA%kakChastoPropuskat==0) {}
+				fout<<odna.pos[0]<<" "<<odna.pos[1]<<" "<<odna.pos[2]<<" | "<<odna.axis[0]<<" "<<odna.axis[1]<<" "<<odna.axis[2]<<"\n";
+				fout.close();
 				odna.Kinematika();
 				Chastici[I]=odna;
+
 			}
-		if (AAA%kakChastoPropuskat==0){
-			fout<<"\n";
-			// fout.close();
-		}
 		// cout<<time(NULL)-seconds<<endl;
 	}
 //#################################################################################################################################################################################################################################################################################	
+	system("shutdown now");
 	// system("pause");
 	return 0;
 };
-// nepotrebniy kod no mojet prigoditsya
-// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
-// for(double i=-chisloChasticNaOs; i<chisloChasticNaOs; i++){
-// 	for(double j=-chisloChasticNaOs; j<chisloChasticNaOs; j++){
-// 		for(double k=-chisloChasticNaOs; k<chisloChasticNaOs; k++){
-// 			Chastici[schetchik].GraniciVselennoy=graniciVselennoy;
-// 			Chastici[schetchik].pos=vektor(shtuk*i+shtuk*0.5, shtuk*j+shtuk*0.5, shtuk*k+shtuk*0.5);
-// 			schetchik++;
-// 		}
-// 	}
-// }
-// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //

@@ -1,15 +1,19 @@
 from vpython import *
 from PIL import ImageGrab, ImageDraw, ImageFont
+import time, os
+
+spisokFiles=os.listdir("D:\\pomoina")
+ind=spisokFiles.index('Boobles.txt')
+f=open('D:\\pomoina\\'+spisokFiles.pop(ind),'r')
+pom=f.readline()[:-1].split(" ")
+f.close()
 
 scene=canvas(width=748, height=748)
-f=open('output.txt','r')
 
-pom=f.readline()[:-1].split(" ")
 graniciVselennoy=float(pom[0])
-N=int(int(pom[1])/2)
+N=int(int(pom[1])/1)
 print(pom)
 Obyom=4/3*6.66E-9**3*pi
-
 gray=color.gray(0.7)
 d=graniciVselennoy
 r=0.005
@@ -26,23 +30,29 @@ vert2.append([vector(-d,-d,d), vector(-d,d,d)])
 vert3.append([vector(d,-d,d), vector(d,d,d)])
 vert4.append([vector(d,-d,-d), vector(d,d,-d)])
 
-a=[]
-for i in range(N):
-	buff=f.readline()
-	buff=f.readline()
-	if len(buff)<3: 
-		N=i
-		break
+B=[]
+for x in spisokFiles:
+	B.append(open('D:\\pomoina\\'+x,'r'))
+print("--- --- ---")
 
-	a.append(buff[:-1].split(' $ ')[:-1])
-	for j in range(len(a[-1])):
-		a[-1][j]=a[-1][j].split(" | ")
-		for k in range(len(a[-1][j])):
-			a[-1][j][k]=a[-1][j][k].split(" ")
-			for n in range(len(a[-1][j][k])):
-				a[-1][j][k][n]=float(a[-1][j][k][n])
+a=[[]]
+y=0
+while True:
+	pom=B[y].readline()[:-1]
+	pom=B[y].readline()[:-1]
+	if pom=='': break
+	pom=pom.split(' | ')
+	pom[0]=pom[0].split(' ')
+	pom[1]=pom[1].split(' ')
+	for x in range(len(pom[0])):
+		pom[0][x]=float(pom[0][x])
+		pom[1][x]=float(pom[1][x])
 
-f.close()
+	a[-1].append(pom)
+	y+=1
+	if y>len(B)-1: 
+		y=0
+		a.append([])
 
 print("opochki. teper narisuem shariki")
 
@@ -55,7 +65,7 @@ print("Obyomnaya Koncentraciya ", N*Obyom/graniciVselennoy**3)
 
 A=0
 print(len(a), N)
-#input()
+time.sleep(2)#input()
 while True:
 	pom=d[0][1].axis
 	if A%10==0: print("\t\t", A)
