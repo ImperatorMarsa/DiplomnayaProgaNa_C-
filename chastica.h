@@ -60,9 +60,9 @@ class chastica{public:
 		axis[0]=fRand(-1,1);
 		axis[1]=fRand(-1,1);
 		axis[2]=fRand(-1,1);
-		axis[0]=fRand(-1,1);
-		axis[1]=fRand(-1,1);
-		axis[2]=fRand(-1,1);
+		// axis[0]=fRand(-1,1);
+		// axis[1]=fRand(-1,1);
+		// axis[2]=fRand(-1,1);
 		moment[0]=0;
 		moment[1]=0;
 		moment[2]=0;

@@ -2,11 +2,14 @@ from vpython import *
 from PIL import ImageGrab, ImageDraw, ImageFont
 import time, os
 
-spisokFiles=os.listdir("D:\\pomoina")
+spisokFiles=os.listdir("D:\\pomoina0")
 ind=spisokFiles.index('Boobles.txt')
-f=open('D:\\pomoina\\'+spisokFiles.pop(ind),'r')
+f=open('D:\\pomoina0\\'+spisokFiles.pop(ind),'r')
 pom=f.readline()[:-1].split(" ")
 f.close()
+
+ind=spisokFiles.index('MagMomebt_ot_Vremeni.txt')
+spisokFiles.pop(ind)
 
 scene=canvas(width=748, height=748)
 
@@ -32,7 +35,7 @@ vert4.append([vector(d,-d,-d), vector(d,d,-d)])
 
 B=[]
 for x in spisokFiles:
-	B.append(open('D:\\pomoina\\'+x,'r'))
+	B.append(open('D:\\pomoina0\\'+x,'r'))
 print("--- --- ---")
 
 a=[[]]
@@ -76,9 +79,9 @@ while True:
 		d[x][1].axis=norm(buf)*10E-9
 
 	A+=1
-	if A%30==0:#
+	if A%10==0:#
 		Freame=ImageGrab.grab([10,10,748,748])#grab([0,0,300,300])
-		puti='D:/filma/hot-%07d-.tiff'%(A//30)
+		puti='D:/filma/hot-%07d-.tiff'%(A//10)
 		Freame.save(puti,'TIFF')
 	if A>=N-3: 
 		A=0

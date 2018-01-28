@@ -14,8 +14,9 @@ double Time=1.0e-10; // sekund
 double kT=273.16*1.38e-23; // 1.38e-23
 double u0=4.0e-7*pi; // Genri/metr
 double MagnitnayaPronichObolochki=1;
+double H=73E3; // Amper/metr
 
-double graniciVselennoy=42.0e-8;
+double graniciVselennoy=7.3e-8;
 double alfa=2.5/graniciVselennoy;
 
 double MassivDlyaPereschetaPeriudGranic[]={0.0,0.0,0.0, 0.0,0.0,1.0, 0.0,1.0,0.0, 0.0,1.0,1.0, 1.0,0.0,0.0, 1.0,0.0,1.0, 1.0,1.0,0.0, 1.0,1.0,1.0};
@@ -24,7 +25,6 @@ double MassivDlyaPereschetaPeriudGranic[]={0.0,0.0,0.0, 0.0,0.0,1.0, 0.0,1.0,0.0
 //###__Sili_Deystvuyushie_V_Sisteme__##############################################################################################################################################################################################################################################
 vektor VneshPole(chastica _1){
 	vektor M(0,0,0);
-	double H=73E3; // Amper/metr
 	vektor B(H*u0,0,0);
 	M(_1.axis, B);
 
@@ -79,20 +79,25 @@ double sqr(double a) {return pow(a, 2);}
 //#################################################################################################################################################################################################################################################################################
 
 int main(int argc, char** argv) {
-	chastica Chastici[42];
+	chastica Chastici[22];
 	int chisloChastic=sizeof(Chastici)/sizeof(Chastici[0]);
 	graniciVselennoy=Chastici[0].Radius/pow(0.1*3/(4*pi*chisloChastic), 1.0/3.0);
 	alfa=2.5/graniciVselennoy;
 
-	system("rmdir /s /q D:\\pomoina");
-	system("mkdir D:\\pomoina");
-	ofstream titulOut("D:\\pomoina\\Boobles.txt");
-	double chisloIteraciy=2E5;
-	titulOut<<graniciVselennoy<<" "<<chisloIteraciy<<"\n";
+	cout<<"Vvesti suda znachenie H=";
+	cin>>H;
+
+	int a=(int)H;
+	string puti="D:\\pomoina"+to_string(a);
+	string ananas="rmdir /s /q "+puti;
+	system(ananas.c_str());
+	ananas="mkdir "+puti;
+	system(ananas.c_str());
+	ofstream titulOut(puti+"\\Boobles.txt");
+	double chisloIteraciy=5E4;
+	titulOut<<graniciVselennoy<<" "<<chisloIteraciy<<" "<<H<<" Premoe summirovanie\n";
 	titulOut.close();
 //###__Raspologayu_chastici_v_prostranstve__######################################################################################################################################################################################################################################
-	// #pragma omp parallel for 
-
 	// double kord=graniciVselennoy/4;
 	// Chastici[0].GraniciVselennoy=graniciVselennoy;
 	// Chastici[0].TimE=Time;
@@ -102,6 +107,8 @@ int main(int argc, char** argv) {
 	// Chastici[1].TimE=Time;
 	// Chastici[1].pos=vektor(-kord, 0, 0);
 
+
+	#pragma omp parallel for 
 	for(int i=0; i<chisloChastic; i++) {
 		Chastici[i].GraniciVselennoy=graniciVselennoy;
 		Chastici[i].TimE=Time;
@@ -118,17 +125,24 @@ int main(int argc, char** argv) {
 		}
 	}
 //#################################################################################################################################################################################################################################################################################	
-	// ofstream fout("output.txt", ios_base::app);
+	ofstream namagnich("Namagnichennost.txt", ios_base::app);
+	ofstream momentik(puti+"\\MagMomebt_ot_Vremeni.txt", ios_base::app);
+	double Namagnichennost=1e-73;
 //###__Osnovnoy_algoritm_modelirovaniya__##########################################################################################################################################################################################################################################
-	for(int AAA=0; AAA<chisloIteraciy; AAA++) {
+	int AAA;
+	for(AAA=0; AAA<chisloIteraciy; AAA++) {
+		if(Namagnichennost/pow(graniciVselennoy*2, 3)>5.7e3) {break;}
+
 		int kakChastoPropuskat=1;
 		time_t seconds=time(NULL);
+		
+		Namagnichennost=0;
 
-		if(AAA%100==0) {cout<<AAA<<" vot shas mi zdes\n";}
-
+		cout<<"\r"<<AAA<<" vot shas mi zdes";
+		
 		#pragma omp parallel for 
 			for(int I=0; I<chisloChastic; I++) {
-				string adress="D:\\pomoina\\output"+to_string(I)+".txt";
+				string adress=puti+"\\output"+to_string(I)+".txt";
 				ofstream fout(adress, ios_base::app);
 
 				vektor forse(0,0,0);
@@ -139,7 +153,7 @@ int main(int argc, char** argv) {
 				for(int J=0; J<chisloChastic; J++) {
 					//+++++ Realizuyu Zdes Summi Evalda ++++++++++++++++++++++++++++++++++++
 					chastica drugaya=Chastici[J];
-					int PredelSumm=3;
+					int PredelSumm=6;
 
 					for(int X=-PredelSumm; X<PredelSumm+1; X++) {
 						int pom1=(int)sqrt(sqr(PredelSumm)-sqr(X));
@@ -158,24 +172,26 @@ int main(int argc, char** argv) {
 					}
 					//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 				}
+				Namagnichennost+=odna.axis[0];
 				odna.forse=forse;
 				odna.moment=moment;
+				odna.Kinematika();
 
-				// if(AAA%500==0) {
-				// 	cout<<"\n"<<forse.mag()<<" "<<moment.mag()<<"\t"<<AAA<<"\n\n";
+				// if(AAA%50==0) {
+				// 	cout<<forse.mag()<<endl;//" "<<moment.mag()<<"\t"<<AAA<<"\n\n";
 				// }
 
-				// if(AAA%kakChastoPropuskat==0) {}
 				fout<<odna.pos[0]<<" "<<odna.pos[1]<<" "<<odna.pos[2]<<" | "<<odna.axis[0]<<" "<<odna.axis[1]<<" "<<odna.axis[2]<<"\n";
 				fout.close();
-				odna.Kinematika();
 				Chastici[I]=odna;
 
 			}
 		// cout<<time(NULL)-seconds<<endl;
+		momentik<<Namagnichennost/pow(graniciVselennoy*2, 3)<<endl;
 	}
 //#################################################################################################################################################################################################################################################################################	
-	system("shutdown now");
+	namagnich<<H<<" "<<Namagnichennost/pow(graniciVselennoy*2, 3)<<" "<<AAA<<endl;
+	// system("shutdown now");
 	// system("pause");
 	return 0;
 };
